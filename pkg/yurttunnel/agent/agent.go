@@ -35,6 +35,34 @@ import (
 	"github.com/alibaba/openyurt/pkg/yurttunnel/pki/certmanager"
 )
 
+// TunnelAgent sets up tunnel to TunnelServer, receive requests
+// from tunnel, and forwards requests to kubelet
+type TunnelAgent interface {
+	Run(<-chan struct{})
+}
+
+// anpTunnelAgent implements the TunnelAgent using the
+// apiserver-network-proxy package
+type anpTunnelAgent struct {
+	tlsCfg           *tls.Config
+	tunnelServerAddr string
+	nodeName         string
+}
+
+var _ TunnelAgent = &anpTunnelAgent{}
+
+// NewTunnelAgent generates a new TunnelAgent
+func NewTunnelAgent(tlsCfg *tls.Config,
+	tunnelServerAddr, nodeName string) TunnelAgent {
+	ata := anpTunnelAgent{
+		tlsCfg:           tlsCfg,
+		tunnelServerAddr: tunnelServerAddr,
+		nodeName:         nodeName,
+	}
+
+	return &ata
+}
+
 // GetServerAddr gets the service address that exposes the yurttunnel-server
 func GetTunnelServerAddr(clientset kubernetes.Interface) (string, error) {
 	svc, err := clientset.CoreV1().Services(constants.YurttunnelServerServiceNs).
@@ -80,15 +108,11 @@ func GetTunnelServerAddr(clientset kubernetes.Interface) (string, error) {
 }
 
 // RunAgent runs the yurttunnel-agent which will try to connect yurttunnel-server
-func RunAgent(
-	tlsCfg *tls.Config,
-	tunnelServerAddr,
-	nodeName string,
-	stopChan <-chan struct{}) {
-	dialOption := grpc.WithTransportCredentials(credentials.NewTLS(tlsCfg))
+func (ata *anpTunnelAgent) Run(stopChan <-chan struct{}) {
+	dialOption := grpc.WithTransportCredentials(credentials.NewTLS(ata.tlsCfg))
 	cc := &anpagent.ClientSetConfig{
-		Address:                 tunnelServerAddr,
-		AgentID:                 nodeName,
+		Address:                 ata.tunnelServerAddr,
+		AgentID:                 ata.nodeName,
 		SyncInterval:            5 * time.Second,
 		ProbeInterval:           5 * time.Second,
 		ReconnectInterval:       5 * time.Second,
@@ -99,5 +123,5 @@ func RunAgent(
 	cs := cc.NewAgentClientSet(stopChan)
 	cs.Serve()
 	klog.Infof("start serving grpc request redirected from yurttunel-server: %s",
-		tunnelServerAddr)
+		ata.tunnelServerAddr)
 }

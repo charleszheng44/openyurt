@@ -17,7 +17,6 @@ limitations under the License.
 package server
 
 import (
-	"context"
 	"crypto/tls"
 	"errors"
 	"fmt"
@@ -33,42 +32,79 @@ import (
 	anpagent "sigs.k8s.io/apiserver-network-proxy/proto/agent"
 )
 
-// RunServer runs the yurttunnel-server
-func RunServer(ctx context.Context,
+// TunnelServermanages tunnels between itself and agents, receives requests
+// from apiserver, and forwards requests to corresponding agents
+type TunnelServer interface {
+	Run() error
+}
+
+// anpTunnelServer implements the TunnelServer interface using the
+// apiserver-network-proxy package
+type anpTunnelServer struct {
+	egressSelectorEnabled    bool
+	interceptorServerUDSFile string
+	serverMasterAddr         string
+	serverMasterInsecureAddr string
+	serverAgentAddr          string
+	tlsCfg                   *tls.Config
+}
+
+var _ TunnelServer = &anpTunnelServer{}
+
+// NewTunnelServer returns a new TunnelServer
+func NewTunnelServer(
 	egressSelectorEnabled bool,
 	interceptorServerUDSFile,
 	serverMasterAddr,
 	serverMasterInsecureAddr,
 	serverAgentAddr string,
-	tlsCfg *tls.Config) error {
+	tlsCfg *tls.Config) TunnelServer {
+	ats := anpTunnelServer{
+		egressSelectorEnabled:    egressSelectorEnabled,
+		interceptorServerUDSFile: interceptorServerUDSFile,
+		serverMasterAddr:         serverMasterAddr,
+		serverMasterInsecureAddr: serverMasterInsecureAddr,
+		serverAgentAddr:          serverAgentAddr,
+		tlsCfg:                   tlsCfg,
+	}
+	return &ats
+}
+
+// Run runs the yurttunnel-server
+func (ats *anpTunnelServer) Run() error {
 	proxyServer := anpserver.NewProxyServer(uuid.New().String(), 1,
 		&anpserver.AgentTokenAuthenticationOptions{})
-
 	// 1. start the proxier
-	proxierErr := runProxier(&anpserver.Tunnel{Server: proxyServer},
-		egressSelectorEnabled,
-		interceptorServerUDSFile,
-		tlsCfg)
+	proxierErr := runProxier(
+		&anpserver.Tunnel{Server: proxyServer},
+		ats.egressSelectorEnabled,
+		ats.interceptorServerUDSFile,
+		ats.tlsCfg)
 	if proxierErr != nil {
 		return fmt.Errorf("fail to run the proxier: %s", proxierErr)
 	}
 
+	wrappedHandler := WrapHandler(
+		&RequestInterceptor{
+			UDSSockFile: ats.interceptorServerUDSFile,
+			TLSConfig:   ats.tlsCfg,
+		},
+		PrintReqInfoMiddleware,
+	)
+
 	// 2. start the master server
 	masterServerErr := runMasterServer(
-		&RequestInterceptor{
-			UDSSockFile: interceptorServerUDSFile,
-			TLSConfig:   tlsCfg,
-		},
-		egressSelectorEnabled,
-		serverMasterAddr,
-		serverMasterInsecureAddr,
-		tlsCfg)
+		wrappedHandler,
+		ats.egressSelectorEnabled,
+		ats.serverMasterAddr,
+		ats.serverMasterInsecureAddr,
+		ats.tlsCfg)
 	if masterServerErr != nil {
 		return fmt.Errorf("fail to run master server: %s", masterServerErr)
 	}
 
 	// 3. start the agent server
-	agentServerErr := runAgentServer(tlsCfg, serverAgentAddr, proxyServer)
+	agentServerErr := runAgentServer(ats.tlsCfg, ats.serverAgentAddr, proxyServer)
 	if agentServerErr != nil {
 		return fmt.Errorf("fail to run agent server: %s", agentServerErr)
 	}
