@@ -22,10 +22,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/alibaba/openyurt/pkg/projectinfo"
-
-	"github.com/alibaba/openyurt/pkg/yurttunnel/constants"
 	certificates "k8s.io/api/certificates/v1beta1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/informers"
@@ -35,6 +33,9 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog"
+
+	"github.com/alibaba/openyurt/pkg/projectinfo"
+	"github.com/alibaba/openyurt/pkg/yurttunnel/constants"
 )
 
 // YurttunnelCSRApprover is the controller that auto approve all
@@ -86,6 +87,9 @@ func (yca *YurttunnelCSRApprover) processNextItem() bool {
 	csr, err := yca.csrInformer.Lister().Get(csrName)
 	if err != nil {
 		runtime.HandleError(err)
+		if apierrors.IsNotFound(err) {
+			return true
+		}
 		enqueueObj(yca.workqueue, csr)
 	}
 
