@@ -87,10 +87,7 @@ func (yca *YurttunnelCSRApprover) processNextItem() bool {
 	csr, err := yca.csrInformer.Lister().Get(csrName)
 	if err != nil {
 		runtime.HandleError(err)
-		if apierrors.IsNotFound(err) {
-			return true
-		}
-		enqueueObj(yca.workqueue, csr)
+		yca.workqueue.AddRateLimited(key)
 	}
 
 	if err := approveYurttunnelCSR(csr, yca.csrClient); err != nil {
