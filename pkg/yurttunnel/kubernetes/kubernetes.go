@@ -35,7 +35,6 @@ import (
 // kubeConfig is empty, it will creates the clientset based on the in-cluster
 // config
 func CreateClientSet(kubeConfig string) (*kubernetes.Clientset, error) {
-
 	config, err := clientcmd.BuildConfigFromFlags("", kubeConfig)
 	if err != nil {
 		return nil, err

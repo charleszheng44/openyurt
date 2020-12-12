@@ -22,6 +22,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	// "io/ioutil"
 	"net"
 	"net/http"
 	"strings"
@@ -118,6 +119,11 @@ func klogAndHttpError(w http.ResponseWriter, errCode int, format string, i ...in
 // ServeHTTP will proxy the request to the tunnel and return response from tunnel back
 // to the client
 func (ri *RequestInterceptor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	klog.Info("================", r.URL.Path)
+	r.URL.Path = "/"
+	if r.TLS != nil {
+		klog.Info("**************")
+	}
 	// 1. setup the tunnel
 	tunnelConn, err := ri.contextDialer(r.Host, r.Header, r.TLS != nil)
 	if err != nil {
@@ -254,6 +260,7 @@ func serveRequest(tunnelConn net.Conn, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	klog.V(4).Infof("interceptor: successfully read the http response from the proxy tunnel for request %s", r.URL.String())
+	klog.Info("+++++++++++", r.URL)
 	defer tunnelHTTPResp.Body.Close()
 
 	if wsstream.IsWebSocketRequest(r) {

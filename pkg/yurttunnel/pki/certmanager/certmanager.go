@@ -72,8 +72,8 @@ func NewYurttunnelServerCertManager(
 		clientset,
 		projectinfo.GetServerName(),
 		fmt.Sprintf(constants.YurttunnelServerCertDir, projectinfo.GetServerName()),
-		constants.YurttunneServerCSRCN,
-		[]string{constants.YurttunneServerCSROrg, constants.YurttunnelCSROrg},
+		constants.YurttunnelServerCSRCN,
+		[]string{constants.YurttunnelServerCSROrg, constants.YurttunnelCSROrg},
 		dnsNames, ips)
 }
 

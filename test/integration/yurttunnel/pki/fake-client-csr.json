@@ -1,0 +1,16 @@
+{
+  "CN": "openyurt.fake.client",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "US",
+      "L": "SunnyVale",
+      "O": "OpenYurt",
+      "OU": "Yurttunnel Integration Test",
+      "ST": "CA"
+    }
+  ]
+}
