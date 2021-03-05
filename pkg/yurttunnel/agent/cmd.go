@@ -70,6 +70,8 @@ func NewYurttunnelAgentCommand(stopCh <-chan struct{}) *cobra.Command {
 		"print the version information.")
 	flags.StringVar(&o.nodeName, "node-name", o.nodeName,
 		"The name of the edge node.")
+	flags.StringVar(&o.nodeIP, "node-ip", o.nodeIP,
+		"The host IP of the edge node.")
 	flags.StringVar(&o.tunnelServerAddr, "tunnelserver-addr", o.tunnelServerAddr,
 		fmt.Sprintf("The address of %s", projectinfo.GetServerName()))
 	flags.StringVar(&o.apiserverAddr, "apiserver-addr", o.tunnelServerAddr,
@@ -86,6 +88,7 @@ func NewYurttunnelAgentCommand(stopCh <-chan struct{}) *cobra.Command {
 // yurttunel-agent
 type YurttunnelAgentOptions struct {
 	nodeName         string
+	nodeIP           string
 	tunnelServerAddr string
 	apiserverAddr    string
 	kubeConfig       string
@@ -98,6 +101,10 @@ type YurttunnelAgentOptions struct {
 func (o *YurttunnelAgentOptions) validate() error {
 	if o.nodeName == "" {
 		return errors.New("--node-name is not set")
+	}
+
+	if o.nodeIP == "" {
+		return errors.New("--node-ip is not set")
 	}
 
 	if !agentIdentifiersAreValid(o.agentIdentifiers) {
@@ -116,7 +123,7 @@ func (o *YurttunnelAgentOptions) complete() error {
 
 		podIP := os.Getenv("POD_IP")
 		if len(podIP) != 0 && net.ParseIP(podIP).To4() != nil {
-			o.agentIdentifiers = fmt.Sprintf("%s,ipv4=%s", o.agentIdentifiers, podIP)
+			o.agentIdentifiers = fmt.Sprintf("%s&ipv4=%s&ipv4=%s", o.agentIdentifiers, podIP, o.nodeIP)
 		}
 	}
 	klog.Infof("%s is set for agent identifies", o.agentIdentifiers)
