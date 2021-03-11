@@ -14,7 +14,7 @@ last-updated: 2021-03-10
 status: provisional
 ---
 
-# Edge Device Management using EdgeX Foundry
+# Managing Edge Devices using EdgeX Foundry
 
 ## Table of Contents
 
@@ -50,9 +50,9 @@ any additional information provided beyond the standard proposal template.
 
 ## Glossary
 
-Refer to the [Cluster API Book Glossary](https://cluster-api.sigs.k8s.io/reference/glossary.html).
+Refer to the [OpenYurt Glossary](docs/proposals/00_openyurt-glossary.md).
 
-If this proposal adds new terms, or defines some, make the changes to the book's glossary when in PR stage.
+If this proposal adds new terms, or defines some, make the changes to the glossary when in PR stage.
 
 ## Summary
 
@@ -71,13 +71,20 @@ to demonstrate the interest in a proposal within the wider Kubernetes community.
 
 ### Goals
 
-- List the specific high-level goals of the proposal.
-- How will we know that this has succeeded?
+- To design a new custom resource definition(CRD), DeviceProfile, to represent different categories of devices
+- To design a new CRD, Device, that represents a physical edge devices
+- To design a new CRD, DeviceService, that defines the way of how to connect to a specific device
+- To support device management using DeviceProfile, Device, DeviceService and EdgeX Foundry 
+- To support automatically setting up of the EdgeX Foundry on the OpenYurt
+- To support declartive device state modification, i.e., modifying the device's properties by changing fields of the device CRs
 
 ### Non-Goals/Future Work
 
-- What high-levels are out of scope for this proposal?
-- Listing non-goals helps to focus discussion and make progress.
+Non-goals are limited to the scope of this proposal, these features may evolve in the future.
+
+- To implement DeviceService for any specific protocol
+- To support data transmission between edge devices and external services
+- To support edge data processing   
 
 ## Proposal
 
@@ -93,13 +100,8 @@ place your `.plantuml` files under `images/` and run `make diagrams` from the do
 
 ### User Stories
 
-- Detail the things that people will be able to do if this proposal is implemented.
-- Include as much detail as possible so that people can understand the "how" of the system.
-- The goal here is to make this feel real for users without getting bogged down.
-
-#### Story 1
-
-#### Story 2
+1. As a vendor, I would like to connect a category of device into the OpenYurt
+2. As an end user, 
 
 ### Requirements (Optional)
 
