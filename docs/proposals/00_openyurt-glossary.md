@@ -9,14 +9,14 @@ This document lists terms for the OpenYurt implementation.
 
 ### CloudNode
 
-The node that are located on the cloud. The control-plane and other cluster management components are usually running on the CloudNode.
+The node that runs on the cloud. The control-plane and other cluster management components are usually running on the CloudNode.
 
 # E
 ---
 
 ### EdgeNode
 
-The node that are accessible to the edge device. The EdgeNode are usually located in sub-optimal network environment and may be disconnected to the cloud node at any time.
+The node that is accessible to the edge device. The EdgeNodes are usually located in a sub-optimal network environment. They may be disconnected from the cloud node at any time.
 
 ### End User
 
@@ -27,22 +27,14 @@ Represents a user of the OpenYurt cluster.
 
 ### NodePool
 
-A CRD that represents a pool of edge nodes in the same network region.
-
-### NodePool Controller
-
-The controller of the NodePool CRD, which reconciles the actual status with the desired state of the NodePool.
+The CRD represents a pool of edge nodes in the same network region.
 
 # U
 ---
 
 ### UnitedDeployment
 
-TODO
-
-### UnitedDeployment Controller
-
-TODO
+The CRD defines the way of deploying homogeneous workloads with different versions/configurations by NodePools.
 
 # Y
 ---
@@ -57,16 +49,16 @@ The local cache running on each EdgeNode, which periodically synchronizes the cl
 
 ### YurtTunnel
 
-The network tunnel that helps CloudNodes to send http requests to EdgeNodes located in an isolated network.
+The network tunnel helps CloudNodes to send HTTP requests to EdgeNodes located in an isolated network.
 
 ### YurtTunnel Server
 
-The server of the YurtTunnel that run on each CloudNode and redirect http requests to corresponding agents.
+The server of the YurtTunnel runs on each CloudNode and redirects HTTP requests to corresponding agents.
 
 ### YurtTunnel Agent
 
-The agent of the YurtTunnel that run on each EdgeNode, receive requests from the YurtTunnel Server and send requests to destination hosts.   
+The agent of the YurtTunnel that runs on each EdgeNode receives requests from the YurtTunnel Server and sends requests to destination hosts.
 
 ### YurtAppManager
 
-The controller manager that includes the NodePool Controller and the UnitedDeployment Controller.
+The controller manager includes the NodePool Controller and the UnitedDeployment Controller.
