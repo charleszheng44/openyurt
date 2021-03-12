@@ -373,7 +373,7 @@ To conciliate the device states between OpenYurt and EdgeX Foundry, a new compon
 
 Following is the process of connecting a new device to the OpenYurt through EdgeX Foundry.
 
-![connect-device](docs/img/connect-device.png)
+![connect-device](../img/connect-device.png)
 
 1. The vendor apply the DeviceProfile CR.
 2. The DeviceManager create the related ValueDescriptor on the EdgeX MetaData Service.
