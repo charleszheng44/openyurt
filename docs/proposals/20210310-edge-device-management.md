@@ -39,7 +39,11 @@ Refer to the [OpenYurt Glossary](docs/proposals/00_openyurt-glossary.md) and the
 
 ## Summary
 
+This proposal introduces an approach to managing IoT devices on OpenYurt using Kubernetes custom resources and EdgeX Foundry. This approach leverages EdgeX Foundry's ability in IoT devices management and uses Kubernetes custom resources to abstract edge devices. As the world's first pluggable IoT platform, EdgeX Foundry has been adopted by most edge device vendors since it was open-sourced. Therefore, the proposed approach inherently supports a rich spectrum of edge devices. On the other hand, we define several custom resource definitions(CRD) that acts as the mediator between OpenYurt and EdgeX Foundry. These CRDs allow users to manage edge devices in a declarative way, which provides users with a Kubernetes-native experience.
+
 ## Motivation
+
+Extending the Kubernetes to the edge is not a new topic. However, to support all varieties of edge devices, existing Kubernetes-based edge frameworks have to develop dedicated adaptors for each category of the device from scratch and change the original Kubernetes architecture significantly, which entails great development efforts with the loss of some upstream K8S features. Instead, we are inspired by the Unix philosophy, i.e., “Do one thing, and do it well,” and believe that a mature edge IoT platform should do the device management. To that end, we integrate EdgeX into the OpenYurt, which supports a full spectrum of devices and supports all upstream K8S features.
 
 ### Goals
 
