@@ -27,9 +27,14 @@ status: provisional
   * [Proposal](#proposal)
     + [User Stories](#user-stories)
     + [Components](#components)
+      - [1. DeviceProfile](#1-deviceprofile)
+      - [2. Device](#2-device)
+      - [3. DeviceService](#3-deviceservice)
     + [Interaction with EdgeX Foundry](#interaction-with-edgex-foundry)
-      - [Setting up EdgeX Foundry](#setting-up-edgex-foundry)
-      - [Interaction with EdgeX services](#interaction-with-edgex-services)
+      - [1. Setting up EdgeX Foundry](#1-setting-up-edgex-foundry)
+      - [2. CRUD objects on EdgeX Foundry](#2-crud-objects-on-edgex-foundry)
+      - [3. Enabling the device properties](#3-enabling-the-device-properties)
+    + [System Architecture](#system-architecture)
   * [Upgrade Strategy](#upgrade-strategy)
   * [Implementation History](#implementation-history)
 
@@ -74,9 +79,13 @@ Non-goals are limited to the scope of this proposal, these features may evolve i
 
 ### Components
 
+Since we leverage EdgeX Foundry to manage edge devices, we define three new custom resource definitions(CRD) that are corresponding to the three core services of the EdgeX Foundry. They are [DeviceProfile](#1-deviceprofile), [Device](#3-device), and [DeviceService](#3-deviceservice). The `DeviceProfile` define a type of devices belonging to a certain protocol, which defines some generic information like name of the manufacturer, the device description and the device model. DeviceProfile also defines what kind of resources (e.g., temperature, humidity) this type of devices provided, and how to read/write these resources. The `DeviceService` includes the details of how to connect a device, like the URL of the device. The `DeviceService` can not exist alone, every `DeviceService` must associated to a `DeviceProfile`. The `Device` gives the detailed definition of a specific device, like which `DeviceProfile`  it belongs to and whcih `DeviceService` it used to connect to the system. For more detailed description of the three objects, please refer to the [EdgeX Foundry's documentation](https://docs.edgexfoundry.org/1.2/microservices/device/profile/Ch-DeviceProfile/). The relationship of these CRDs and related structs are shown below.
+
+![struct-relation](../img/struct-relation.png)
+
 #### 1. DeviceProfile
 
-Followings are definitions of DeviceProfile and related Golang structs:
+Followings are definitions of `DeviceProfile` CRD and its related Golang structs. 
 
 ```go
 type DeviceProfile struct {
@@ -89,6 +98,7 @@ type DeviceProfile struct {
 
 // DeviceProfileSpec defines the desired state of DeviceProfile
 type DeviceProfileSpec struct {
+	// Description of the Device
 	Description string `json:"description,omitempty"`
 	// Manufacturer of the device
 	Manufacturer string `json:"manufacturer,omitempty"`
@@ -96,18 +106,23 @@ type DeviceProfileSpec struct {
 	Model string `json:"model,omitempty"`
 	// EdgeXLabels used to search for groups of profiles on EdgeX Foundry
 	EdgeXLabels     []string         `json:"labels,omitempty"`
+	// Available DeviceResources of the profile
 	DeviceResources []DeviceResource `json:"deviceResources,omitempty"`
-
+	// Available DeviceCommands of the profile
 	DeviceCommands []ProfileResource `json:"deviceCommands,omitempty"`
+	// Available CoreCommands of the profile
 	CoreCommands   []Command         `json:"coreCommands,omitempty"`
 }
 
 // DeviceProfileStatus defines the observed state of DeviceProfile
 type DeviceProfileStatus struct {
+	// EdgeXId is the Id assigned by the EdgeX Foundry
 	EdgeXId      string `json:"id,omitempty"`
+	// AddedToEdgeX indicates if the DeviceProfile has been added to the EdgeX Foundry
 	AddedToEdgeX bool   `json:"addedToEdgeX,omitempty"`
 }
 
+// DeviceResource is the resource/data that 
 type DeviceResource struct {
 	Description string            `json:"description"`
 	Name        string            `json:"name"`
@@ -116,11 +131,13 @@ type DeviceResource struct {
 	Attributes  map[string]string `json:"attributes,omitempty"`
 }
 
+// ProfileProperty defines the property details of the DeviceResource
 type ProfileProperty struct {
 	Value PropertyValue `json:"value"`
 	Units Units         `json:"units,omitempty"`
 }
 
+// PropertyValue defines the value format of the property
 type PropertyValue struct {
     // ValueDescriptor Type of property after transformations
 	Type         string `json:"type,omitempty"`         
@@ -153,18 +170,21 @@ type PropertyValue struct {
 	MediaType     string `json:"mediaType,omitempty"`
 }
 
+// Units defines the unit of the property
 type Units struct {
 	Type         string `json:"type,omitempty"`
 	ReadWrite    string `json:"readWrite,omitempty"`
 	DefaultValue string `json:"defaultValue,omitempty"`
 }
 
+// ProfileResource includes the available operations to the DeviceResource 
 type ProfileResource struct {
 	Name string              `json:"name,omitempty"`
 	Get  []ResourceOperation `json:"get,omitempty"`
 	Set  []ResourceOperation `json:"set,omitempty"`
 }
 
+// ResourceOperation gives the details of how to Get/Set the DeviceResource
 type ResourceOperation struct {
 	Index     string `json:"index,omitempty"`
 	Operation string `json:"operation,omitempty"`
@@ -181,6 +201,8 @@ type ResourceOperation struct {
 	Mappings      map[string]string `json:"mappings,omitempty"`
 }
 
+// Command defines the available commands for end users to control the devices
+// NOTE: a Command usually corresponding to a DeviceCommand and a DeviceResource
 type Command struct {
 	// EdgeXId is a unique identifier used by EdgeX Foundry, such as a UUID
 	EdgeXId string `json:"id,omitempty"`
@@ -192,15 +214,18 @@ type Command struct {
 	Put Put `json:"put,omitempty"`
 }
 
+// Put defines the details of the Put operation
 type Put struct {
 	Action         `json:",inline"`
 	ParameterNames []string `json:"parameterNames,omitempty"`
 }
 
+// Get defines the details of the Get operation
 type Get struct {
 	Action `json:",omitempty"`
 }
 
+// Action defins the details of a HTTP operation
 type Action struct {
 	// Path used by service for action on a device or sensor
 	Path string `json:"path,omitempty"`
@@ -210,7 +235,7 @@ type Action struct {
 	URL string `json:"url,omitempty"`
 }
 
-// Response for a Get or Put request to a service
+// Response of a Get or Put request to a service
 type Response struct {
 	Code           string   `json:"code,omitempty"`
 	Description    string   `json:"description,omitempty"`
@@ -220,7 +245,7 @@ type Response struct {
 ```
 #### 2. Device
 
-Followings are definitions of Device and related Golang structs:
+Followings are definitions of the `Device` CRD and its related Golang structs:
 
 ```go
 // Device is the Schema for the devices API
@@ -303,7 +328,7 @@ type ProtocolProperties map[string]string
 
 #### 3. DeviceService
 
-Followings are definitions of DeviceService and related Golang structs
+Followings are definitions of `DeviceService` CRD and related Golang structs
 
 ```go
 // DeviceService is the Schema for the deviceservices API
@@ -370,7 +395,6 @@ type Addressable struct {
 
 As OpenYurt supports all upstream Kubernetes features, the deployment of the EdgeX Foundry should be same as deploying it on the Kubernetes. The Deployment yaml files can be found in the [EdgeX Foundry example repository](https://github.com/edgexfoundry/edgex-examples/tree/master/deployment/kubernetes), by simply applying them, the necessary services will be deployed. In addition, we will also allow users to choose if they want to setup the EdgeX Foundry automacially when converting the Kubernetes cluster to the OpenYurt cluster using the `yurtctl` command-line tool. 
 
-
 #### 2. CRUD objects on EdgeX Foundry
 
 To conciliate the device states between OpenYurt and EdgeX Foundry, a new component, DeviceManager, will be installed on the OpenYurt. The DeviceManager includes three controllers, i.e., DeviceProfile Controller, DeviceService Controller, and the Device Controller, which act as mediators between the OpenYurt and the EdgeX Fundry and are responsible for reconciling the states of the device related custom resources with the states of the corresponding objects on the EdgeX Foundry.
@@ -391,7 +415,11 @@ Following is the process of connecting a new device to the OpenYurt through Edge
 
 #### 3. Enabling the device properties 
 
+TODO
+
 ### System Architecture
+
+![system-architecture](../img/system-arch.png)
 
 ## Upgrade Strategy
 
